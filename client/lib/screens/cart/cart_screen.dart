@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/cart_provider.dart';
 import '../../models/cart_item.dart';
+import '../checkout/checkout_screen.dart';
+import '../auth/login_screen.dart';
 
 class CartScreen extends StatelessWidget {
   const CartScreen({super.key});
@@ -9,7 +12,9 @@ class CartScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cartProvider = Provider.of<CartProvider>(context);
+    final authProvider = Provider.of<AuthProvider>(context);
     final cartItems = cartProvider.cartItems;
+    final isLoggedIn = authProvider.user != null;
 
     return Scaffold(
       appBar: AppBar(
@@ -65,7 +70,7 @@ class CartScreen extends StatelessWidget {
                               ),
                             ),
                             Text(
-                              '\$${cartProvider.totalPrice.toStringAsFixed(2)}',
+                              'ETB ${cartProvider.totalPrice.toStringAsFixed(2)}',
                               style: const TextStyle(
                                 fontSize: 20,
                                 fontWeight: FontWeight.bold,
@@ -77,13 +82,21 @@ class CartScreen extends StatelessWidget {
                         const SizedBox(height: 16),
                         ElevatedButton(
                           onPressed: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Proceeding to checkout...'),
-                                duration: Duration(seconds: 2),
-                              ),
-                            );
-                            // TODO: Implement checkout logic (local or future server sync)
+                            if (isLoggedIn) {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const CheckoutScreen(),
+                                ),
+                              );
+                            } else {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const LoginScreen(),
+                                ),
+                              );
+                            }
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.blueAccent,
@@ -93,9 +106,11 @@ class CartScreen extends StatelessWidget {
                             ),
                             minimumSize: const Size(double.infinity, 50),
                           ),
-                          child: const Text(
-                            'Proceed to Checkout',
-                            style: TextStyle(
+                          child: Text(
+                            isLoggedIn
+                                ? 'Proceed to Checkout'
+                                : 'Login to Checkout',
+                            style: const TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
                               color: Colors.white,
@@ -161,7 +176,7 @@ class CartItemCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '\$${cartItem.price.toStringAsFixed(2)}',
+                    'ETB ${cartItem.price.toStringAsFixed(2)}',
                     style: const TextStyle(
                       fontSize: 14,
                       color: Colors.blueAccent,
