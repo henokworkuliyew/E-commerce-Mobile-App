@@ -22,6 +22,7 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isLoading = false;
   String? _errorMessage;
   int _selectedIndex = 0;
+  String? _selectedCategory = 'All'; // Track selected category filter
 
   @override
   void initState() {
@@ -90,8 +91,63 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  // Get unique categories from products
+  List<String> _getCategories() {
+    final categories = <String>{'All'};
+    for (var product in _products) {
+      categories.add(product.category);
+    }
+    return categories.toList();
+  }
+
+  // Filter products based on selected category
+  List<Product> _getFilteredProducts() {
+    if (_selectedCategory == 'All' || _selectedCategory == null) {
+      return _products;
+    }
+    return _products
+        .where((product) => product.category == _selectedCategory)
+        .toList();
+  }
+
+  // Map categories to icons
+  IconData _getCategoryIcon(String category) {
+    switch (category) {
+      case 'Watch':
+        return Icons.watch;
+      case 'Phone':
+        return Icons.phone;
+      case 'Accessories':
+        return Icons.devices;
+      case 'Electronics':
+        return Icons.electrical_services;
+      default:
+        return Icons.all_inclusive;
+    }
+  }
+
+  // Map categories to colors
+  Color _getCategoryColor(String category) {
+    switch (category) {
+      case 'Watch':
+        return Colors.blueAccent;
+      case 'Phone':
+        return Colors.green;
+      case 'Accessories':
+        return Colors.orange;
+      case 'Electronics':
+        return Colors.purple;
+      default:
+        return Colors.grey;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final user = Provider.of<AuthProvider>(context).user;
+    final categories = _getCategories();
+    final filteredProducts = _getFilteredProducts();
+
     return MultiProvider(
       providers: [ChangeNotifierProvider(create: (_) => CartProvider())],
       child: Scaffold(
@@ -103,69 +159,136 @@ class _HomeScreenState extends State<HomeScreen> {
           backgroundColor: Colors.blueAccent,
           centerTitle: true,
           actions: [
-            IconButton(
-              icon: const Icon(Icons.logout, color: Colors.white),
-              tooltip: 'Logout',
-              onPressed: _logout,
+            if (user != null)
+              IconButton(
+                icon: const Icon(Icons.logout, color: Colors.white),
+                tooltip: 'Logout',
+                onPressed: _logout,
+              ),
+          ],
+        ),
+        body: Column(
+          children: [
+            // Category filter
+            Container(
+              height: 60,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemCount: categories.length,
+                itemBuilder: (context, index) {
+                  final category = categories[index];
+                  final isSelected = _selectedCategory == category;
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: FilterChip(
+                      label: Row(
+                        children: [
+                          Icon(
+                            _getCategoryIcon(category),
+                            size: 20,
+                            color:
+                                isSelected
+                                    ? Colors.white
+                                    : _getCategoryColor(category),
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            category,
+                            style: TextStyle(
+                              color: isSelected ? Colors.white : Colors.black87,
+                            ),
+                          ),
+                        ],
+                      ),
+                      selected: isSelected,
+                      selectedColor: _getCategoryColor(category),
+                      checkmarkColor: Colors.white,
+                      onSelected: (selected) {
+                        setState(() {
+                          _selectedCategory = selected ? category : 'All';
+                        });
+                      },
+                      backgroundColor: Colors.grey[200],
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+            // Product grid
+            Expanded(
+              child:
+                  _isLoading
+                      ? const Center(
+                        child: CircularProgressIndicator(
+                          color: Colors.blueAccent,
+                        ),
+                      )
+                      : _errorMessage != null
+                      ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              _errorMessage!,
+                              style: const TextStyle(
+                                color: Colors.red,
+                                fontSize: 16,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            ElevatedButton(
+                              onPressed: _fetchProducts,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.blueAccent,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                              child: const Text(
+                                'Retry',
+                                style: TextStyle(color: Colors.white),
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                      : filteredProducts.isEmpty
+                      ? const Center(
+                        child: Text(
+                          'No products found',
+                          style: TextStyle(fontSize: 18, color: Colors.grey),
+                        ),
+                      )
+                      : RefreshIndicator(
+                        onRefresh: _fetchProducts,
+                        color: Colors.blueAccent,
+                        child: GridView.builder(
+                          padding: const EdgeInsets.all(12),
+                          gridDelegate:
+                              SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount:
+                                    MediaQuery.of(context).size.width > 600
+                                        ? 3
+                                        : 2,
+                                crossAxisSpacing: 12,
+                                mainAxisSpacing: 12,
+                                childAspectRatio: 0.7,
+                              ),
+                          itemCount: filteredProducts.length,
+                          itemBuilder: (context, index) {
+                            return ProductCard(
+                              product: filteredProducts[index],
+                            );
+                          },
+                        ),
+                      ),
             ),
           ],
         ),
-        body:
-            _isLoading
-                ? const Center(
-                  child: CircularProgressIndicator(color: Colors.blueAccent),
-                )
-                : _errorMessage != null
-                ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        _errorMessage!,
-                        style: const TextStyle(color: Colors.red, fontSize: 16),
-                      ),
-                      const SizedBox(height: 12),
-                      ElevatedButton(
-                        onPressed: _fetchProducts,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blueAccent,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                        child: const Text(
-                          'Retry',
-                          style: TextStyle(color: Colors.white),
-                        ),
-                      ),
-                    ],
-                  ),
-                )
-                : _products.isEmpty
-                ? const Center(
-                  child: Text(
-                    'No products found',
-                    style: TextStyle(fontSize: 18, color: Colors.grey),
-                  ),
-                )
-                : RefreshIndicator(
-                  onRefresh: _fetchProducts,
-                  color: Colors.blueAccent,
-                  child: GridView.builder(
-                    padding: const EdgeInsets.all(12),
-                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount:
-                          MediaQuery.of(context).size.width > 600 ? 3 : 2,
-                      crossAxisSpacing: 12,
-                      mainAxisSpacing: 12,
-                      childAspectRatio: 0.7,
-                    ),
-                    itemCount: _products.length,
-                    itemBuilder: (context, index) {
-                      return ProductCard(product: _products[index]);
-                    },
-                  ),
-                ),
         bottomNavigationBar: BottomNavigationBar(
           currentIndex: _selectedIndex,
           onTap: _onItemTapped,
