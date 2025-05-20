@@ -21,6 +21,11 @@ class CartProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  // Check if a product is in the cart
+  bool isInCart(Product product) {
+    return _cartItems.any((item) => item.productId == product.id);
+  }
+
   Future<void> addToCart(Product product) async {
     final existingItemIndex = _cartItems.indexWhere(
       (item) => item.productId == product.id,
