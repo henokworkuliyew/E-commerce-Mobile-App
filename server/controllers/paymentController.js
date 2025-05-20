@@ -12,9 +12,29 @@ const axiosInstance = axios.create({
 });
 
 exports.initializePayment = async (req, res) => {
-  const { userId, amount, currency, email, firstName, lastName, phoneNumber } = req.body;
+  const {
+    userId,
+    amount,
+    currency,
+    email,
+    firstName,
+    lastName,
+    phoneNumber,
+    callback_url = 'https://4d1d-102-213-68-252.ngrok-free.app/callback', // Updated URL
+    return_url = 'https://4d1d-102-213-68-252.ngrok-free.app/success',   // Updated URL
+  } = req.body || {};
 
-  console.log('Received payment initialization request:', { userId, amount, currency, email, firstName, lastName, phoneNumber });
+  console.log('Received payment initialization request:', {
+    userId,
+    amount,
+    currency,
+    email,
+    firstName,
+    lastName,
+    phoneNumber,
+    callback_url,
+    return_url,
+  });
 
   if (!userId || !amount || !currency || !email || !firstName || !phoneNumber) {
     return res.status(400).json({ message: 'Missing required fields' });
@@ -24,15 +44,15 @@ exports.initializePayment = async (req, res) => {
   console.log('Generated txRef:', txRef);
 
   const paymentData = {
-    amount: amount.toString(), // Adjust if Chapa requires cents: (parseFloat(amount) * 100).toString()
+    amount: amount.toString(),
     currency,
     email,
     first_name: firstName,
     last_name: lastName,
     phone_number: phoneNumber,
     tx_ref: txRef,
-    callback_url: 'http://192.168.228.1:5000/callback',
-    return_url: 'https://abcd1234.ngrok.io/success', // Replace with your ngrok URL
+    callback_url,
+    return_url,
   };
   console.log('Sending to Chapa:', paymentData);
 
@@ -64,7 +84,6 @@ exports.initializePayment = async (req, res) => {
     res.status(500).json({ message: 'Internal server error' });
   }
 };
-
 exports.verifyPayment = async (req, res) => {
   const { tx_ref, status } = req.query;
 
