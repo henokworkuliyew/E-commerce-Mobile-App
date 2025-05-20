@@ -10,7 +10,7 @@ import '../../providers/cart_provider.dart';
 import '../auth/login_screen.dart';
 
 // Define the server IP address
-const String serverBaseUrl = 'http://192.168.228.1:5000';
+const String serverBaseUrl = 'http://192.168.114.252:5000';
 
 class ConfirmScreen extends StatefulWidget {
   final String fullName;
@@ -238,6 +238,10 @@ class _ConfirmScreenState extends State<ConfirmScreen> {
         'firstName': firstName,
         'lastName': lastName,
         'phoneNumber': phoneNumber,
+        'callback_url':
+            'https://4d1d-102-213-68-252.ngrok-free.app/callback', // Updated URL
+        'return_url':
+            'https://4d1d-102-213-68-252.ngrok-free.app/success', // Updated URL
       };
       print('Sending to backend: $payload');
 
