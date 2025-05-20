@@ -4,6 +4,7 @@ import 'package:carousel_slider/carousel_slider.dart';
 import 'package:provider/provider.dart';
 import '../../models/product.dart';
 import '../../providers/cart_provider.dart';
+import '../cart/cart_screen.dart'; // Import your CartScreen (adjust the path as needed)
 
 class ProductDetailScreen extends StatelessWidget {
   final Product product;
@@ -12,7 +13,11 @@ class ProductDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cartProvider = Provider.of<CartProvider>(context, listen: false);
+    // Use listen: true to rebuild the button when the cart changes
+    final cartProvider = Provider.of<CartProvider>(context);
+
+    // Check if the product is already in the cart
+    final bool isInCart = cartProvider.isInCart(product);
 
     return Scaffold(
       appBar: AppBar(
@@ -37,30 +42,27 @@ class ProductDetailScreen extends StatelessWidget {
                     aspectRatio: 1.0,
                     viewportFraction: 0.9,
                   ),
-                  items:
-                      product.images.map((image) {
-                        final imageUrl =
-                            image['image'] ?? 'https://via.placeholder.com/150';
-                        return CachedNetworkImage(
-                          imageUrl: imageUrl,
-                          fit: BoxFit.cover,
-                          placeholder:
-                              (context, url) => const Center(
-                                child: CircularProgressIndicator(
-                                  color: Colors.blueAccent,
-                                ),
-                              ),
-                          errorWidget:
-                              (context, url, error) => Container(
-                                color: Colors.grey[200],
-                                child: const Icon(
-                                  Icons.broken_image,
-                                  size: 50,
-                                  color: Colors.grey,
-                                ),
-                              ),
-                        );
-                      }).toList(),
+                  items: product.images.map((image) {
+                    final imageUrl =
+                        image['image'] ?? 'https://via.placeholder.com/150';
+                    return CachedNetworkImage(
+                      imageUrl: imageUrl,
+                      fit: BoxFit.cover,
+                      placeholder: (context, url) => const Center(
+                        child: CircularProgressIndicator(
+                          color: Colors.blueAccent,
+                        ),
+                      ),
+                      errorWidget: (context, url, error) => Container(
+                        color: Colors.grey[200],
+                        child: const Icon(
+                          Icons.broken_image,
+                          size: 50,
+                          color: Colors.grey,
+                        ),
+                      ),
+                    );
+                  }).toList(),
                 )
                 : Container(
                   height: 300,
@@ -168,18 +170,37 @@ class ProductDetailScreen extends StatelessWidget {
       bottomNavigationBar: Padding(
         padding: const EdgeInsets.all(16.0),
         child: ElevatedButton(
-          onPressed:
-              product.inStock
-                  ? () {
-                    cartProvider.addToCart(product);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('${product.name} added to cart!'),
-                        duration: const Duration(seconds: 2),
-                      ),
+          onPressed: product.inStock
+              ? () {
+                  if (isInCart) {
+                    // Navigate to CartScreen if the product is already in the cart
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const CartScreen()),
                     );
+                  } else {
+                    // Add to cart if not already in the cart
+                    try {
+                      cartProvider.addToCart(product);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('${product.name} added to cart!'),
+                          duration: const Duration(seconds: 2),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
+                    } catch (e) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Error adding to cart: $e'),
+                          duration: const Duration(seconds: 2),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
                   }
-                  : null,
+                }
+              : null,
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.blueAccent,
             disabledBackgroundColor: Colors.grey[400],
@@ -188,9 +209,9 @@ class ProductDetailScreen extends StatelessWidget {
               borderRadius: BorderRadius.circular(12),
             ),
           ),
-          child: const Text(
-            'Add to Cart',
-            style: TextStyle(
+          child: Text(
+            isInCart ? 'View Cart' : 'Add to Cart',
+            style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
               color: Colors.white,
