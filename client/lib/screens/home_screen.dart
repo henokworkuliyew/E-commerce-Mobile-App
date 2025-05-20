@@ -346,6 +346,8 @@ class _ProductCardState extends State<ProductCard>
 
   @override
   Widget build(BuildContext context) {
+    final cartProvider = Provider.of<CartProvider>(context, listen: false);
+
     return ScaleTransition(
       scale: _scaleAnimation,
       child: Card(
@@ -418,6 +420,56 @@ class _ProductCardState extends State<ProductCard>
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 12,
+                            ),
+                          ),
+                        ),
+                      ),
+                      Positioned(
+                        bottom: 8,
+                        right: 8,
+                        child: GestureDetector(
+                          onTap: () {
+                            if (widget.product.inStock) {
+                              try {
+                                cartProvider.addToCart(widget.product);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      '${widget.product.name} added to cart!',
+                                    ),
+                                    duration: const Duration(seconds: 2),
+                                    backgroundColor: Colors.green,
+                                  ),
+                                );
+                              } catch (e) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Error adding to cart: $e'),
+                                    duration: const Duration(seconds: 2),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
+                              }
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Product is out of stock'),
+                                  duration: Duration(seconds: 2),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            }
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              color: Colors.blueAccent.withOpacity(0.8),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.shopping_cart,
+                              color: Colors.white,
+                              size: 24,
                             ),
                           ),
                         ),
